@@ -1,0 +1,30 @@
+name: KABAL offline Android tools
+on:
+  push:
+    branches: [artemis-apk-build-20260921]
+    paths: ['.github/workflows/kabal-toolchain.yml']
+permissions:
+  contents: read
+jobs:
+  tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -V | tail -1)"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+          mkdir -p bundle/build-tools
+          cp "$ANDROID_HOME/platforms/android-35/android.jar" bundle/android.jar
+          cp "$ANDROID_HOME/platforms/android-35/core-for-system-modules.jar" bundle/core-for-system-modules.jar
+          cp -a "$ANDROID_HOME/build-tools/35.0.0/". bundle/build-tools/
+          tar -czf android35-tools.tar.gz bundle
+          sha256sum android35-tools.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kabal-android35-tools
+          path: android35-tools.tar.gz
+          retention-days: 1
+          if-no-files-found: error
